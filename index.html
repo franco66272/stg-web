@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>STG — Reparación de PC y Consolas | Barrio Cardenal Samoré, CABA</title>
+<meta name="description" content="Reparación de PC, notebooks, consolas y joysticks (drift, flex, carga). Armado de PC y mantenimiento. Barrio Cardenal Samoré, CABA. Coordiná por WhatsApp.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0b1f2e;
+    --bg-1:#0e2233;
+    --bg-2:#123048;
+    --panel:#153a55;
+    --grid-line: rgba(140, 190, 214, 0.08);
+    --text-hi:#eaf4f8;
+    --text-mid:#a9c4d4;
+    --text-dim:#5f7f92;
+    --signal:#31d6a8;
+    --signal-dim: rgba(49, 214, 168, 0.15);
+    --warn:#ffb54a;
+    --warn-dim: rgba(255, 181, 74, 0.15);
+    --fault:#ff6b6b;
+    --line-hairline: rgba(140, 190, 214, 0.18);
+    --radius: 10px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+    *{animation-duration:0.001ms !important; animation-iteration-count:1 !important; transition-duration:0.001ms !important;}
+  }
+  body{
+    background:
+      linear-gradient(180deg, var(--bg-0), var(--bg-1) 40%, var(--bg-0)),
+      repeating-linear-gradient(0deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 48px),
+      repeating-linear-gradient(90deg, var(--grid-line) 0px, var(--grid-line) 1px, transparent 1px, transparent 48px);
+    color: var(--text-hi);
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  a{color:inherit;}
+  .mono{font-family:'JetBrains Mono', monospace;}
+  h1,h2,h3{font-family:'Space Grotesk', sans-serif;}
+  .wrap{max-width:1180px; margin:0 auto; padding:0 28px;}
+
+  /* focus visibility */
+  a:focus-visible, button:focus-visible{
+    outline:2px solid var(--signal);
+    outline-offset:3px;
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:sticky; top:0; z-index:50;
+    background: rgba(11,31,46,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom:1px solid var(--line-hairline);
+  }
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 0;
+  }
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.05rem; letter-spacing:0.02em;}
+  .brand-mark{width:34px; height:34px; flex-shrink:0;}
+  .brand small{display:block; font-family:'JetBrains Mono', monospace; font-weight:400; font-size:0.65rem; color:var(--text-dim); letter-spacing:0.08em;}
+  nav.links{display:flex; gap:28px; font-size:0.92rem; color:var(--text-mid);}
+  nav.links a{text-decoration:none; transition:color 0.15s;}
+  nav.links a:hover{color:var(--text-hi);}
+  .cta-btn{
+    display:inline-flex; align-items:center; gap:8px;
+    background: var(--signal); color:#06231b; font-weight:600; font-size:0.9rem;
+    padding:10px 18px; border-radius:8px; text-decoration:none;
+    border:1px solid var(--signal);
+    transition: transform 0.15s, box-shadow 0.15s;
+    white-space:nowrap;
+  }
+  .cta-btn:hover{ transform:translateY(-1px); box-shadow:0 6px 20px var(--signal-dim); }
+  .cta-btn.ghost{
+    background:transparent; color:var(--text-hi); border:1px solid var(--line-hairline);
+  }
+  .cta-btn.ghost:hover{ border-color:var(--signal); color:var(--signal); box-shadow:none; }
+  .mobile-hide{display:flex;}
+  @media (max-width:760px){ .mobile-hide{display:none;} }
+
+  /* ---------- HERO ---------- */
+  .hero{ padding:64px 0 40px; }
+  .hero-grid{ display:grid; grid-template-columns:1.15fr 0.85fr; gap:48px; align-items:start; }
+  @media (max-width:900px){ .hero-grid{grid-template-columns:1fr;} }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'JetBrains Mono', monospace; font-size:0.75rem; letter-spacing:0.08em;
+    color: var(--signal); border:1px solid rgba(49,214,168,0.35); background:var(--signal-dim);
+    padding:6px 12px; border-radius:100px; margin-bottom:22px;
+  }
+  .eyebrow .dot{width:6px; height:6px; border-radius:50%; background:var(--signal); box-shadow:0 0 8px var(--signal);}
+
+  h1{
+    font-size:clamp(2.2rem, 4.6vw, 3.5rem);
+    line-height:1.06; font-weight:700; letter-spacing:-0.01em;
+    margin-bottom:20px;
+  }
+  h1 .accent{color:var(--signal);}
+  .lede{ color:var(--text-mid); font-size:1.08rem; max-width:520px; margin-bottom:30px; }
+  .hero-actions{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:34px; }
+  .trust-row{ display:flex; gap:26px; flex-wrap:wrap; font-family:'JetBrains Mono', monospace; font-size:0.78rem; color:var(--text-dim); }
+  .trust-row strong{ color:var(--text-hi); font-weight:600; }
+
+  /* ---------- TICKET PANEL (signature-adjacent, hero) ---------- */
+  .ticket{
+    background: var(--panel);
+    border:1px solid var(--line-hairline);
+    border-radius: var(--radius);
+    overflow:hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+  }
+  .ticket-head{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:14px 18px; border-bottom:1px dashed var(--line-hairline);
+    font-family:'JetBrains Mono', monospace; font-size:0.72rem; letter-spacing:0.06em; color:var(--text-dim);
+  }
+  .ticket-head .live{ color:var(--signal); display:flex; align-items:center; gap:6px;}
+  .ticket-head .live .dot{width:6px;height:6px;border-radius:50%;background:var(--signal); animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.35;}}
+  .ticket-body{ padding:18px; }
+  .ticket-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    padding:10px 0; border-bottom:1px solid var(--grid-line);
+    font-size:0.85rem;
+  }
+  .ticket-row:last-child{border-bottom:none;}
+  .ticket-row .label{ color:var(--text-dim); font-family:'JetBrains Mono', monospace; font-size:0.72rem; text-transform:uppercase; letter-spacing:0.05em;}
+  .ticket-row .val{ color:var(--text-hi); font-weight:500; text-align:right; }
+  .status-pill{
+    font-family:'JetBrains Mono', monospace; font-size:0.68rem; font-weight:600;
+    padding:3px 9px; border-radius:100px; letter-spacing:0.04em;
+  }
+  .status-pill.ok{ background:var(--signal-dim); color:var(--signal); }
+  .status-pill.wait{ background:var(--warn-dim); color:var(--warn); }
+  .ticket-foot{
+    padding:16px 18px; border-top:1px solid var(--line-hairline);
+    display:flex; gap:10px;
+  }
+  .ticket-foot .cta-btn{ flex:1; justify-content:center; }
+
+  /* ---------- SECTIONS shared ---------- */
+  section{ padding:78px 0; border-top:1px solid var(--line-hairline); }
+  .section-tag{
+    font-family:'JetBrains Mono', monospace; font-size:0.75rem; letter-spacing:0.1em; color:var(--text-dim);
+    text-transform:uppercase; margin-bottom:12px; display:flex; align-items:center; gap:10px;
+  }
+  .section-tag::before{content:''; width:22px; height:1px; background:var(--text-dim);}
+  .section-title{ font-size:clamp(1.6rem,3vw,2.2rem); font-weight:700; margin-bottom:14px; max-width:640px;}
+  .section-sub{ color:var(--text-mid); max-width:560px; margin-bottom:44px; }
+
+  /* ---------- SERVICIOS ---------- */
+  .svc-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+  @media (max-width:860px){ .svc-grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:560px){ .svc-grid{grid-template-columns:1fr;} }
+  .svc-card{
+    background:var(--bg-2); border:1px solid var(--line-hairline); border-radius:var(--radius);
+    padding:22px; transition:border-color 0.2s, transform 0.2s;
+  }
+  .svc-card:hover{ border-color:var(--signal); transform:translateY(-3px); }
+  .svc-icon{ width:38px; height:38px; margin-bottom:16px; color:var(--signal); }
+  .svc-card h3{ font-size:1.02rem; margin-bottom:8px; }
+  .svc-card p{ color:var(--text-mid); font-size:0.88rem; }
+
+  /* ---------- DIAGNOSTIC SIGNATURE ---------- */
+  .diag-wrap{ display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:center; }
+  @media (max-width:900px){ .diag-wrap{grid-template-columns:1fr;} }
+  .diag-list{ display:flex; flex-direction:column; gap:2px; }
+  .diag-item{
+    display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:8px;
+    border:1px solid transparent; cursor:default; transition:background 0.2s, border-color 0.2s;
+  }
+  .diag-item:hover{ background:var(--bg-2); border-color:var(--line-hairline); }
+  .diag-item .tag{
+    font-family:'JetBrains Mono', monospace; font-size:0.68rem; color:var(--bg-0);
+    background:var(--signal); width:34px; height:22px; border-radius:4px;
+    display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;
+  }
+  .diag-item .txt strong{ display:block; font-size:0.95rem; font-weight:600; }
+  .diag-item .txt span{ color:var(--text-dim); font-size:0.82rem; }
+
+  .schematic-box{
+    background:var(--bg-2); border:1px solid var(--line-hairline); border-radius:var(--radius);
+    padding:24px; position:relative;
+  }
+  .schematic-box svg{ width:100%; height:auto; display:block; }
+  .schem-caption{
+    margin-top:14px; font-family:'JetBrains Mono', monospace; font-size:0.7rem; color:var(--text-dim);
+    display:flex; justify-content:space-between;
+  }
+
+  /* ---------- PROCESO ---------- */
+  .steps{ display:grid; grid-template-columns:repeat(4,1fr); gap:20px; }
+  @media (max-width:900px){ .steps{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:560px){ .steps{grid-template-columns:1fr;} }
+  .step{ position:relative; padding-top:8px; }
+  .step-num{
+    font-family:'JetBrains Mono', monospace; font-size:0.78rem; color:var(--signal);
+    display:block; margin-bottom:10px;
+  }
+  .step h3{ font-size:1rem; margin-bottom:8px; }
+  .step p{ color:var(--text-mid); font-size:0.86rem; }
+  .steps .step:not(:last-child)::after{
+    content:''; position:absolute; top:14px; right:-10px; width:20px; height:1px;
+    background:var(--line-hairline);
+    display:none;
+  }
+  @media (min-width:901px){ .steps .step:not(:last-child)::after{display:block;} }
+
+  /* ---------- ZONA / HORARIO ---------- */
+  .zone-grid{ display:grid; grid-template-columns:1fr 1fr; gap:48px; }
+  @media (max-width:900px){ .zone-grid{grid-template-columns:1fr;} }
+  .info-block{ margin-bottom:26px; }
+  .info-block .label{
+    font-family:'JetBrains Mono', monospace; font-size:0.72rem; text-transform:uppercase;
+    color:var(--text-dim); letter-spacing:0.06em; margin-bottom:6px;
+  }
+  .info-block .value{ font-size:1.02rem; }
+  table.hours{ width:100%; border-collapse:collapse; font-size:0.9rem; }
+  table.hours td{ padding:9px 0; border-bottom:1px solid var(--grid-line); color:var(--text-mid); }
+  table.hours td:last-child{ text-align:right; color:var(--text-hi); font-family:'JetBrains Mono', monospace; font-size:0.85rem; }
+  table.hours tr.today td{ color:var(--signal); }
+  table.hours tr.today td:last-child{ color:var(--signal); }
+
+  .map-frame{
+    border-radius:var(--radius); overflow:hidden; border:1px solid var(--line-hairline);
+    aspect-ratio: 4/3; background:var(--bg-2);
+  }
+  .map-frame iframe{ width:100%; height:100%; border:0; filter: grayscale(0.3) invert(0.92) contrast(0.9); }
+
+  /* ---------- CONTACTO / FOOTER ---------- */
+  .contact-cta{
+    background: linear-gradient(135deg, var(--bg-2), var(--panel));
+    border:1px solid var(--line-hairline); border-radius:16px;
+    padding:48px; text-align:center;
+  }
+  .contact-cta h2{ font-size:clamp(1.5rem,3vw,2rem); margin-bottom:14px; }
+  .contact-cta p{ color:var(--text-mid); max-width:480px; margin:0 auto 28px; }
+  .contact-actions{ display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+
+  footer{ padding:36px 0; border-top:1px solid var(--line-hairline); }
+  .footer-row{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; }
+  .footer-row .fbrand{ font-weight:700; font-family:'Space Grotesk', sans-serif; }
+  .footer-links{ display:flex; gap:22px; font-size:0.85rem; color:var(--text-dim); }
+  .footer-links a{ text-decoration:none; }
+  .footer-links a:hover{ color:var(--text-hi); }
+  .footer-note{ font-family:'JetBrains Mono', monospace; font-size:0.72rem; color:var(--text-dim); margin-top:14px; }
+
+  /* whatsapp floating */
+  .wa-float{
+    position:fixed; bottom:22px; right:22px; z-index:60;
+    width:56px; height:56px; border-radius:50%;
+    background:var(--signal); display:flex; align-items:center; justify-content:center;
+    box-shadow:0 8px 24px var(--signal-dim);
+    transition:transform 0.2s;
+  }
+  .wa-float:hover{ transform:scale(1.06); }
+  .wa-float svg{ width:26px; height:26px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap nav">
+    <a href="#top" class="brand">
+      <svg class="brand-mark" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="38" height="38" rx="9" stroke="#31d6a8" stroke-width="1.6"/>
+        <path d="M12 20h4l2-6 4 12 2-6h4" stroke="#31d6a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>STG<small>REPARACIÓN DE PC Y CONSOLAS</small></span>
+    </a>
+    <nav class="links mobile-hide">
+      <a href="#servicios">Servicios</a>
+      <a href="#diagnostico">Reparación de joysticks</a>
+      <a href="#proceso">Cómo trabajamos</a>
+      <a href="#zona">Zona y horarios</a>
+    </nav>
+    <a class="cta-btn" href="https://wa.me/541124047058" target="_blank" rel="noopener">
+      WhatsApp →
+    </a>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" style="border-top:none; padding-top:64px;">
+    <div class="wrap" style="max-width:760px;">
+      <div>
+        <div class="eyebrow"><span class="dot"></span> BARRIO CARDENAL SAMORÉ · CABA</div>
+        <h1>Tu PC, notebook o consola.<br>Diagnosticada <span class="accent">de verdad</span>, no adivinada.</h1>
+        <p class="lede">Reparación y mantenimiento de PC de escritorio y notebooks, armado a medida, y service especializado en consolas PlayStation y Xbox — incluida la reparación de joysticks (drift, flex y conectores de carga).</p>
+        <div class="hero-actions">
+          <a class="cta-btn" href="https://wa.me/541124047058" target="_blank" rel="noopener">Coordinar por WhatsApp →</a>
+          <a class="cta-btn ghost" href="#zona">Ver ubicación y horarios</a>
+        </div>
+        <div class="trust-row">
+          <span>Abierto desde <strong>diciembre 2023</strong></span>
+          <span>Atención con <strong>coordinación previa</strong></span>
+          <span><strong>Lun a sáb</strong>, horarios abajo ↓</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="servicios">
+    <div class="wrap">
+      <div class="section-tag">Servicios</div>
+      <h2 class="section-title">Todo lo que entra al taller, sale funcionando</h2>
+      <p class="section-sub">Trabajo con PC de escritorio, notebooks, consolas y sus periféricos. Estos son los servicios habituales.</p>
+
+      <div class="svc-grid">
+        <div class="svc-card">
+          <svg class="svc-icon" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="12" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M8 20h8M12 16v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <h3>Armado de PC</h3>
+          <p>Armado a medida según uso y presupuesto, con componentes elegidos para lo que necesitás.</p>
+        </div>
+        <div class="svc-card">
+          <svg class="svc-icon" viewBox="0 0 24 24" fill="none"><path d="M4 5h16v10H4z" stroke="currentColor" stroke-width="1.5"/><path d="M2 19h20l-2-4H4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <h3>Notebooks</h3>
+          <p>Diagnóstico de hardware, mantenimiento preventivo, limpieza interna y actualizaciones.</p>
+        </div>
+        <div class="svc-card">
+          <svg class="svc-icon" viewBox="0 0 24 24" fill="none"><rect x="2" y="8" width="20" height="9" rx="4" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="12.5" r="1.4" fill="currentColor"/><circle cx="17" cy="11" r="1" fill="currentColor"/><circle cx="19" cy="13" r="1" fill="currentColor"/></svg>
+          <h3>Consolas PlayStation y Xbox</h3>
+          <p>Service técnico especializado, con experiencia puntual en joysticks originales.</p>
+        </div>
+        <div class="svc-card">
+          <svg class="svc-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="6" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          <h3>Joysticks PS4, PS5 y Xbox</h3>
+          <p>Drift de analógicos, fallas de botones y flex, problemas de carga y conectores.</p>
+        </div>
+        <div class="svc-card">
+          <svg class="svc-icon" viewBox="0 0 24 24" fill="none"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2 2M16.4 16.4l2 2M5.6 18.4l2-2M16.4 7.6l2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.5"/></svg>
+          <h3>Mantenimiento general</h3>
+          <p>Cambio de pasta térmica y metal líquido, limpieza y optimización de PC y notebooks.</p>
+        </div>
+        <div class="svc-card">
+          <svg class="svc-icon" viewBox="0 0 24 24" fill="none"><path d="M9 3h6l1 4h3v4l-4 1v6H9v-6l-4-1V7h3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <h3>Diagnóstico técnico</h3>
+          <p>Evaluación previa antes de reparar, para saber exactamente qué falla y qué se necesita.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="diagnostico">
+    <div class="wrap">
+      <div class="section-tag">Nuestra especialidad</div>
+      <h2 class="section-title">El drift no se soluciona golpeando el joystick</h2>
+      <p class="section-sub">La mayoría de las fallas de mando tienen un origen puntual. Así identificamos el problema antes de abrir el control.</p>
+      <div class="diag-list" style="max-width:640px;">
+        <div class="diag-item">
+          <span class="tag">01</span>
+          <div class="txt"><strong>Drift de analógicos</strong><span>Desgaste del módulo o del potenciómetro interno</span></div>
+        </div>
+        <div class="diag-item">
+          <span class="tag">02</span>
+          <div class="txt"><strong>Fallas de botones y flex</strong><span>Cable flex dañado o botones que no responden</span></div>
+        </div>
+        <div class="diag-item">
+          <span class="tag">03</span>
+          <div class="txt"><strong>Problemas de carga y conectores</strong><span>Puerto USB-C o conector interno flojo o roto</span></div>
+        </div>
+        <div class="diag-item">
+          <span class="tag">04</span>
+          <div class="txt"><strong>Reemplazo de módulos analógicos</strong><span>Cuando el desgaste ya no tiene arreglo parcial</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="proceso">
+    <div class="wrap">
+      <div class="section-tag">Cómo trabajamos</div>
+      <h2 class="section-title">De la consulta a la entrega</h2>
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">01 / Coordinación</span>
+          <h3>Escribís por WhatsApp</h3>
+          <p>Contás la falla y coordinamos día y horario de atención.</p>
+        </div>
+        <div class="step">
+          <span class="step-num">02 / Diagnóstico</span>
+          <h3>Revisamos el equipo</h3>
+          <p>Identificamos el origen real del problema antes de presupuestar.</p>
+        </div>
+        <div class="step">
+          <span class="step-num">03 / Reparación</span>
+          <h3>Con tu aprobación</h3>
+          <p>Confirmás el presupuesto y reparamos o armamos lo que necesitás.</p>
+        </div>
+        <div class="step">
+          <span class="step-num">04 / Entrega</span>
+          <h3>Retirás tu equipo</h3>
+          <p>Te avisamos apenas está listo, dentro del horario de atención.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="zona">
+    <div class="wrap zone-grid">
+      <div>
+        <div class="section-tag">Zona y horarios</div>
+        <h2 class="section-title">Barrio Cardenal Samoré, CABA</h2>
+
+        <div class="info-block">
+          <div class="label">Dirección</div>
+          <div class="value">Av. Castañares 4781, Torre 4C — C1439, CABA</div>
+        </div>
+        <div class="info-block">
+          <div class="label">Área de servicio</div>
+          <div class="value">Barrio Cardenal Samoré y zona aledaña</div>
+        </div>
+
+        <table class="hours">
+          <tr><td>Lunes</td><td>18:30 – 22:00</td></tr>
+          <tr><td>Martes</td><td>18:30 – 22:00</td></tr>
+          <tr><td>Miércoles</td><td>18:30 – 22:00</td></tr>
+          <tr><td>Jueves</td><td>18:30 – 22:00</td></tr>
+          <tr><td>Viernes</td><td>18:30 – 22:00</td></tr>
+          <tr><td>Sábado</td><td>09:00 – 14:00</td></tr>
+          <tr><td>Domingo</td><td>Cerrado</td></tr>
+        </table>
+      </div>
+
+      <div>
+        <div class="map-frame">
+          <iframe
+            src="https://www.google.com/maps?q=STG+Reparaci%C3%B3n+de+PC+y+Consolas,+Av.+Casta%C3%B1ares+4781,+CABA&output=embed"
+            loading="lazy" referrerpolicy="no-referrer-when-downgrade"
+            title="Mapa de ubicación STG - Reparación de PC y Consolas"></iframe>
+        </div>
+        <a class="cta-btn ghost" style="margin-top:16px; width:100%; justify-content:center;"
+           href="https://www.google.com/maps/place/STG+%E2%80%93+Reparaci%C3%B3n+de+PC+y+Consolas/@-34.6662797,-58.4726697,20.06z/data=!4m15!1m8!3m7!1s0x95bcc95ce52f1101:0x1a16ecb0e51d96e7!2sAv.+Casta%C3%B1ares+4781,+C1439+Comuna+8,+Cdad.+Aut%C3%B3noma+de+Buenos+Aires!3b1!8m2!3d-34.666317!4d-58.472336!16s%2Fg%2F11zkmpbb3d!3m5!1s0x95bcc9dc2e5faa3b:0xc3eee3e7f44d9784!8m2!3d-34.6662491!4d-58.4724287!16s%2Fg%2F11lcs9cslt?entry=ttu&g_ep=EgoyMDI2MDcyOS4wIKXMDSoASAFQAw%3D%3D"
+           target="_blank" rel="noopener">
+           Ver reseñas en Google Maps →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="contacto" style="border-top:1px solid var(--line-hairline);">
+    <div class="wrap">
+      <div class="contact-cta">
+        <h2>¿Tu equipo necesita una revisión?</h2>
+        <p>Contame qué le pasa y coordinamos el diagnóstico. Sin vueltas, por WhatsApp.</p>
+        <div class="contact-actions">
+          <a class="cta-btn" href="https://wa.me/541124047058" target="_blank" rel="noopener">Escribir por WhatsApp →</a>
+          <a class="cta-btn ghost" href="tel:01124047058">Llamar: 011 2404-7058</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap footer-row">
+    <span class="fbrand">STG — Reparación de PC y Consolas</span>
+    <div class="footer-links">
+      <a href="https://wa.me/541124047058" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="https://www.instagram.com/service_tec_garcia/" target="_blank" rel="noopener">Instagram</a>
+      <a href="tel:01124047058">011 2404-7058</a>
+    </div>
+  </div>
+  <div class="wrap footer-note">Barrio Cardenal Samoré, CABA · Atención con coordinación previa por WhatsApp</div>
+</footer>
+
+<a class="wa-float" href="https://wa.me/541124047058" target="_blank" rel="noopener" aria-label="Escribir por WhatsApp">
+  <svg viewBox="0 0 32 32" fill="#06231b"><path d="M16 2.9C8.8 2.9 2.9 8.7 2.9 16c0 2.5.7 4.8 1.9 6.9L3 29l6.3-1.7c2 .1.1 1.1 1.7 1.1h.1c7.2 0 13.1-5.8 13.1-13.1S23.2 2.9 16 2.9zm0 23.8h-.1c-2 0-3.9-.5-5.6-1.5l-.4-.2-3.7 1 1-3.6-.3-.4c-1.1-1.8-1.7-3.8-1.7-5.9 0-6.2 5-11.2 11.2-11.2 3 0 5.8 1.2 7.9 3.3s3.3 4.9 3.3 7.9c0 6.2-5.1 11.2-11.3 11.2 0-.1 0 0 0 0zm6.1-8.4c-.3-.2-2-1-2.3-1.1-.3-.1-.5-.2-.8.2s-.9 1.1-1.1 1.3c-.2.2-.4.2-.8.1-.3-.2-1.4-.5-2.7-1.7-1-.9-1.6-2-1.9-2.3-.2-.3 0-.5.1-.7.2-.2.3-.4.5-.6.2-.2.2-.4.3-.6.1-.2.1-.5 0-.7-.1-.2-.8-1.9-1.1-2.6-.3-.7-.6-.6-.8-.6h-.7c-.2 0-.6.1-.9.4-.3.3-1.2 1.1-1.2 2.8s1.2 3.3 1.4 3.5c.2.2 2.4 3.7 5.9 5.1.8.3 1.5.6 2 .7.8.3 1.6.2 2.1.1.7-.1 2-.8 2.3-1.6.3-.8.3-1.5.2-1.6-.1-.2-.3-.3-.6-.4z"/></svg>
+</a>
+
+<script>
+  // Highlight today's row in the hours table for a small dose of "system status" honesty
+  document.addEventListener('DOMContentLoaded', () => {
+    const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const today = days[new Date().getDay()];
+    document.querySelectorAll('table.hours tr').forEach(row => {
+      if(row.firstElementChild && row.firstElementChild.textContent.trim() === today){
+        row.classList.add('today');
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
