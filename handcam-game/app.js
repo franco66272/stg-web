@@ -86,7 +86,7 @@ function classifyHuman(pose){
 function setText(id,text){ document.querySelector(id).textContent=text; }
 
 async function loadModels(){
-  const vision = await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22');
+  const vision = await import('https://esm.run/@mediapipe/tasks-vision@0.10.22');
   const {FilesetResolver,HandLandmarker,PoseLandmarker} = vision;
   const fileset=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm');
   handLandmarker=await HandLandmarker.createFromOptions(fileset,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:0.3,minHandPresenceConfidence:0.3,minTrackingConfidence:0.3});
