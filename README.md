@@ -1,17 +1,10 @@
 # ReparaRadar
 
-Comparador y recopilador de catálogos argentinos de insumos, herramientas y repuestos para reparación de celulares.
+Comparador y recopilador de catálogos argentinos de **insumos, herramientas y repuestos para reparación de celulares**.
 
-## Qué hace
+## Objetivo
 
-- Consulta los catálogos configurados.
-- Intenta primero la WooCommerce Store API pública.
-- Si la API no está disponible, usa un extractor HTML controlado.
-- Normaliza precio, stock, imagen, SKU, categoría y URL.
-- Elimina duplicados por tienda + identificador estable.
-- Genera `catalogo.json` de forma atómica.
-- Genera `reportes/ultima_ejecucion.json`.
-- Tiene una web local para buscar y filtrar productos.
+Reunir en un solo catálogo productos de proveedores para técnicos: herramientas de apertura, estaciones de soldado, microscopios, fuentes, multímetros, programadoras, flux, estaño, adhesivos, máquinas, módulos, baterías, flex, cámaras, conectores e IC.
 
 ## Inicio rápido en Windows
 
@@ -27,21 +20,42 @@ Después abrir:
 
 `http://127.0.0.1:5000`
 
-La primera actualización puede tardar varios minutos según las tiendas y sus límites de conexión. No hace falta ejecutar Scrapy manualmente.
+**No hace falta ejecutar Scrapy manualmente.** El proyecto usa `requests` + BeautifulSoup y prueba automáticamente varias fuentes de datos.
 
-## Actualizar solamente
+## Cómo actualiza
+
+Para cada tienda, el extractor automático prueba en este orden:
+
+1. WooCommerce Store API pública.
+2. Shopify `products.json`.
+3. Sitemap XML / WordPress sitemap + JSON-LD de producto.
+4. Crawling HTML controlado como último recurso.
+
+La primera fuente que devuelve un catálogo válido se utiliza. Esto evita depender de que todas las tiendas tengan el mismo CMS.
+
+## Seguridad del catálogo
+
+El runner guarda un catálogo independiente por tienda en `datos_tiendas/`.
+
+- Una extracción vacía no borra el catálogo anterior.
+- Una caída extrema respecto del catálogo anterior activa `PARTIAL_FALLBACK`.
+- Un error de red o parser activa `FAILED_FALLBACK` si existe información anterior.
+- `catalogo.json` solamente se genera a partir de catálogos válidos.
+- `reportes/ultima_ejecucion.json` registra el resultado de cada tienda.
+
+## Diagnóstico de una sola tienda
 
 ```bat
-actualizar.bat
+probar_tienda.bat
 ```
 
-## Iniciar solamente
+Ingresá, por ejemplo:
 
-```bat
-iniciar.bat
+```text
+fenixcell_com_ar
 ```
 
-Si todavía no existe `catalogo.json`, `iniciar.bat` ejecuta la actualización automáticamente.
+El diagnóstico informa productos, válidos, imágenes, SKU y stock informado.
 
 ## Tiendas iniciales
 
@@ -54,20 +68,27 @@ Si todavía no existe `catalogo.json`, `iniciar.bat` ejecuta la actualización a
 - ProParts Celulares
 - Mayorista Electrónica
 
-Las fuentes se revisan tienda por tienda. No se asume que todas utilizan el mismo CMS.
+Las fuentes fueron seleccionadas por su catálogo orientado al servicio técnico. Por ejemplo, Fenix Cell publica categorías de repuestos, programadoras, microscopios, herramientas/insumos, fuentes y estaciones de soldado; Uniontools ofrece herramientas, estaciones y repuestos; I2C separa herramientas e insumos; Evophone tiene herramientas, microscopios, programadoras, fuentes y repuestos. Las estructuras exactas se verifican durante la extracción y no se asumen a priori.
 
 ## Categorías objetivo
 
-- Herramientas de apertura y precisión
+- Apertura y precisión
 - Estaciones de soldado y aire caliente
 - Microscopios y accesorios
-- Fuentes y medición
+- Fuentes, multímetros y medición
 - Programadoras
 - Flux, estaño, malla y consumibles
 - Adhesivos y químicos
-- Máquinas separadoras/laminadoras
-- Repuestos iPhone y Android
-- Módulos, baterías, tapas, flex, cámaras, conectores e IC
+- Separadoras, laminadoras y máquinas
+- Repuestos iPhone
+- Repuestos Android
+- Módulos y displays
+- Baterías
+- Tapas
+- Flex
+- Cámaras
+- Conectores
+- IC y componentes
 
 ## Formato común
 
@@ -89,6 +110,6 @@ Las fuentes se revisan tienda por tienda. No se asume que todas utilizan el mism
 }
 ```
 
-## Principio de seguridad
+## Principio del proyecto
 
-Una extracción vacía no reemplaza un catálogo válido. El runner solamente reemplaza `catalogo.json` cuando al menos una tienda produjo productos válidos; cada ejecución deja un reporte para poder detectar fallos sin perder los datos anteriores.
+Primero se identifica la fuente de datos real de cada tienda; después se aprovecha la fuente más estable disponible. No se agregan selectores específicos por intuición si existe una API, sitemap o JSON estructurado más confiable.
