@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+catalogo.json
+catalogo.tmp
+datos_tiendas/*.json
+reportes/*.json
+*.log
