@@ -1,4 +1,4 @@
-import { HandLandmarker } from 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/+esm';
+import { HandLandmarker } from '@mediapipe/tasks-vision';
 
 const originalDetect = HandLandmarker.prototype.detectForVideo;
 const state = { initialized:false, left:null, right:null, leftV:{x:0,y:0}, rightV:{x:0,y:0}, lastTime:0 };
@@ -31,7 +31,6 @@ HandLandmarker.prototype.detectForVideo = function(video,timestamp){
   const swappedCost=(ca==='Left'?dist(a,rp):dist(a,lp))+(cb==='Right'?dist(b,lp):dist(b,rp));
 
   // Correct only a handedness-label flip. Never swap the landmark arrays.
-  // This keeps the physical hand identity continuous through fast simultaneous motion.
   if(swappedCost+.055<labelCost){const tmp=h[0];h[0]=h[1];h[1]=tmp;}
 
   const li=label(h[0])==='Left'?0:1;
