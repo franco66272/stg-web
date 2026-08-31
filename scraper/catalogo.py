@@ -4,17 +4,23 @@ import json
 from pathlib import Path
 from typing import Any
 
-OUT = Path("catalogo.json")
+PROJECT = Path(__file__).resolve().parent.parent
+OUT = PROJECT / "catalogo.json"
 
 
 def normalizar_item(item: dict[str, Any], tienda: str) -> dict[str, Any]:
+    precio = item.get("precio")
+    try:
+        precio = float(precio) if precio is not None else None
+    except (TypeError, ValueError):
+        precio = None
     return {
         "tienda": tienda,
         "nombre": str(item.get("nombre") or "").strip(),
         "marca": item.get("marca"),
         "categoria": item.get("categoria") or "Otros",
         "subcategoria": item.get("subcategoria"),
-        "precio": item.get("precio"),
+        "precio": precio,
         "precio_anterior": item.get("precio_anterior"),
         "stock": item.get("stock"),
         "imagen": item.get("imagen"),
