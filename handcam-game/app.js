@@ -52,8 +52,8 @@ function makeFilterSet(count) {
 }
 
 const hands = {
-  left: { filters: makeFilterSet(21), points: null, last: null, velocity: Array.from({length:21},()=>({x:0,y:0,z:0})), lostAt: 0, lastTime: 0 },
-  right:{ filters: makeFilterSet(21), points: null, last: null, velocity: Array.from({length:21},()=>({x:0,y:0,z:0})), lostAt: 0, lastTime: 0 }
+  left: { filters: makeFilterSet(21), last: null, velocity: Array.from({length:21},()=>({x:0,y:0,z:0})), lostAt: 0, lastTime: 0 },
+  right:{ filters: makeFilterSet(21), last: null, velocity: Array.from({length:21},()=>({x:0,y:0,z:0})), lostAt: 0, lastTime: 0 }
 };
 
 const poseFilters = makeFilterSet(33);
@@ -65,6 +65,7 @@ let fpsFrames = 0;
 let fpsTimer = performance.now();
 let poseTick = 0;
 let lastVideoTime = -1;
+let processing = false;
 
 function resizeCanvas() {
   if (!video.videoWidth || !video.videoHeight) return;
@@ -100,6 +101,7 @@ function drawConnections(points, connections) {
 }
 
 function filteredPoints(hand, landmarks, now) {
+  const alpha = Number(smoothingEl.value);
   const points = landmarks.map((p, i) => ({
     x: hand.filters[i].x.filter(p.x, now),
     y: hand.filters[i].y.filter(p.y, now),
@@ -112,10 +114,14 @@ function filteredPoints(hand, landmarks, now) {
       hand.velocity[i].x = (points[i].x - hand.last[i].x) / dt;
       hand.velocity[i].y = (points[i].y - hand.last[i].y) / dt;
       hand.velocity[i].z = (points[i].z - hand.last[i].z) / dt;
+      // Extra lightweight adaptive correction: fast motion follows the raw point sooner.
+      if (alpha > 0 && Math.hypot(hand.velocity[i].x, hand.velocity[i].y) > 1.0) {
+        points[i].x = hand.last[i].x + (points[i].x - hand.last[i].x) * Math.min(1, alpha * 1.8);
+        points[i].y = hand.last[i].y + (points[i].y - hand.last[i].y) * Math.min(1, alpha * 1.8);
+      }
     }
   }
   hand.last = points;
-  hand.points = points;
   hand.lastTime = now;
   hand.lostAt = now;
   return points;
@@ -136,8 +142,7 @@ function predictedPoints(hand, now) {
 }
 
 function handState(hand, landmarks, now) {
-  if (landmarks) return filteredPoints(hand, landmarks, now);
-  return predictedPoints(hand, now);
+  return landmarks ? filteredPoints(hand, landmarks, now) : predictedPoints(hand, now);
 }
 
 function drawSaber(points, label) {
@@ -202,8 +207,6 @@ function smoothPose(rawPose, now) {
 }
 
 async function loadModels() {
-  // Keep the WASM runtime on the exact same version as the installed JS package.
-  // Mixing 1.0.1 JS with the old 0.10.22 WASM can fail with an unhelpful "undefined" error.
   const fileset = await FilesetResolver.forVisionTasks(
     'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
   );
@@ -220,9 +223,10 @@ async function loadModels() {
     minTrackingConfidence: 0.2
   });
 
+  // Lite pose model + lower pose frequency keeps the hands responsive.
   poseLandmarker = await PoseLandmarker.createFromOptions(fileset, {
     baseOptions: {
-      modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',
+      modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
       delegate: 'GPU'
     },
     runningMode: 'VIDEO',
@@ -234,17 +238,19 @@ async function loadModels() {
 }
 
 function processFrame(now) {
-  if (!running || video.readyState < 2) {
-    requestAnimationFrame(processFrame);
+  if (!running || video.readyState < 2 || processing) {
+    if (running) requestAnimationFrame(processFrame);
     return;
   }
 
-  resizeCanvas();
   if (video.currentTime === lastVideoTime) {
     requestAnimationFrame(processFrame);
     return;
   }
   lastVideoTime = video.currentTime;
+  processing = true;
+
+  resizeCanvas();
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   let hr = { landmarks: [], handedness: [] };
@@ -269,7 +275,8 @@ function processFrame(now) {
 
   let pose = poseLast;
   poseTick++;
-  if (poseTick % 2 === 0) {
+  // Pose is expensive and changes more slowly than hands. Run it every 4 video frames.
+  if (poseTick % 4 === 0) {
     try {
       const pr = poseLandmarker.detectForVideo(video, now);
       const candidate = pr.landmarks?.find(classifyHuman) || null;
@@ -315,6 +322,7 @@ function processFrame(now) {
     fpsTimer = now;
   }
 
+  processing = false;
   requestAnimationFrame(processFrame);
 }
 
@@ -331,8 +339,9 @@ async function start() {
 
     const stream = await navigator.mediaDevices.getUserMedia({
       video: {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
+        // Lower capture resolution reduces inference latency while keeping enough detail for hands.
+        width: { ideal: 960, max: 1280 },
+        height: { ideal: 540, max: 720 },
         frameRate: { ideal: 60, min: 30 }
       },
       audio: false
