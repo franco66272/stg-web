@@ -1,7 +1,8 @@
+import { FilesetResolver, HandLandmarker, PoseLandmarker } from '@mediapipe/tasks-vision';
+
 const video = document.querySelector('#video');
 const canvas = document.querySelector('#overlay');
 const ctx = canvas.getContext('2d');
-const stage = document.querySelector('#stage');
 const startBtn = document.querySelector('#startBtn');
 const statusEl = document.querySelector('#status');
 const mirrorEl = document.querySelector('#mirror');
@@ -15,16 +16,17 @@ const HAND_CONNECTIONS = [[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],
 const POSE_CONNECTIONS = [[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32]];
 
 const hands = {
-  left: { points:null, last:null, velocity:{x:0,y:0}, lostAt:0 },
-  right:{ points:null, last:null, velocity:{x:0,y:0}, lostAt:0 }
+  left: { last:null, velocity:{x:0,y:0}, lostAt:0, lastTime:0 },
+  right:{ last:null, velocity:{x:0,y:0}, lostAt:0, lastTime:0 }
 };
-let running=false, lastFrame=performance.now(), fps=0, frames=0, fpsTimer=performance.now();
+let running=false, fps=0, frames=0, fpsTimer=performance.now();
 let handLandmarker=null, poseLandmarker=null;
 
 function mirrorX(x){ return mirrorEl.checked ? 1-x : x; }
 function resizeCanvas(){
   if (!video.videoWidth || !video.videoHeight) return;
-  canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
 }
 window.addEventListener('resize', resizeCanvas);
 
@@ -38,7 +40,7 @@ function drawConnections(points, connections){
   }
   ctx.stroke();
 }
-function normalizedPoints(points){ return points.map(p=>({x:mirrorX(p.x), y:p.y, z:p.z ?? 0})); }
+function normalizedPoints(points){ return points.map(p=>({x:mirrorX(p.x), y:p.y, z:p.z ?? 0, visibility:p.visibility})); }
 
 function handState(hand, landmarks, now){
   if(!landmarks){
@@ -48,16 +50,24 @@ function handState(hand, landmarks, now){
     if(age>max) return null;
     const dt=age/1000;
     const decay=Math.max(0,1-age/max);
-    return hand.last.map((p,i)=>({x:p.x+hand.velocity.x*dt*decay,y:p.y+hand.velocity.y*dt*decay,z:p.z}));
+    return hand.last.map(p=>({x:p.x+hand.velocity.x*dt*decay,y:p.y+hand.velocity.y*dt*decay,z:p.z}));
   }
+
   const pts=normalizedPoints(landmarks);
   if(hand.last){
-    const dt=Math.max(1,(now-hand.lastTime))/1000;
-    hand.velocity={x:(pts[0].x-hand.last[0].x)/dt,y:(pts[0].y-hand.last[0].y)/dt};
+    const dt=Math.max(0.001,(now-hand.lastTime)/1000);
+    const rawVx=(pts[0].x-hand.last[0].x)/dt;
+    const rawVy=(pts[0].y-hand.last[0].y)/dt;
+    hand.velocity={x:hand.velocity.x*0.35+rawVx*0.65,y:hand.velocity.y*0.35+rawVy*0.65};
     const alpha=Number(smoothingEl.value);
-    for(let i=0;i<pts.length;i++) pts[i]={x:hand.last[i].x+(pts[i].x-hand.last[i].x)*alpha,y:hand.last[i].y+(pts[i].y-hand.last[i].y)*alpha,z:pts[i].z};
+    for(let i=0;i<pts.length;i++){
+      pts[i]={x:hand.last[i].x+(pts[i].x-hand.last[i].x)*alpha,y:hand.last[i].y+(pts[i].y-hand.last[i].y)*alpha,z:pts[i].z};
+    }
   }
-  hand.last=pts; hand.lastTime=now; hand.lostAt=now; return pts;
+  hand.last=pts;
+  hand.lastTime=now;
+  hand.lostAt=now;
+  return pts;
 }
 
 function drawSaber(points, label){
@@ -68,8 +78,16 @@ function drawSaber(points, label){
   const ux=dx/len, uy=dy/len;
   const bladeLen=0.18;
   const end={x:wrist.x+ux*bladeLen,y:wrist.y+uy*bladeLen};
-  ctx.save(); ctx.lineCap='round'; ctx.lineWidth=10; ctx.strokeStyle=label==='left' ? '#ff214d':'#2677ff'; ctx.shadowBlur=18; ctx.shadowColor=ctx.strokeStyle;
-  ctx.beginPath(); ctx.moveTo(wrist.x*canvas.width,wrist.y*canvas.height); ctx.lineTo(end.x*canvas.width,end.y*canvas.height); ctx.stroke();
+  ctx.save();
+  ctx.lineCap='round';
+  ctx.lineWidth=10;
+  ctx.strokeStyle=label==='left' ? '#ff214d':'#2677ff';
+  ctx.shadowBlur=18;
+  ctx.shadowColor=ctx.strokeStyle;
+  ctx.beginPath();
+  ctx.moveTo(wrist.x*canvas.width,wrist.y*canvas.height);
+  ctx.lineTo(end.x*canvas.width,end.y*canvas.height);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -83,12 +101,11 @@ function classifyHuman(pose){
   return shoulder>0.04 && hip>0.025;
 }
 
-function setText(id,text){ document.querySelector(id).textContent=text; }
+function setText(id,text){ const el=document.querySelector(id); if(el) el.textContent=text; }
 
 async function loadModels(){
-  const vision = await import('https://esm.run/@mediapipe/tasks-vision@0.10.22');
-  const {FilesetResolver,HandLandmarker,PoseLandmarker} = vision;
-  const fileset=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm');
+  statusEl.textContent='Cargando MediaPipe local…';
+  const fileset=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm');
   handLandmarker=await HandLandmarker.createFromOptions(fileset,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',delegate:'GPU'},runningMode:'VIDEO',numHands:2,minHandDetectionConfidence:0.3,minHandPresenceConfidence:0.3,minTrackingConfidence:0.3});
   poseLandmarker=await PoseLandmarker.createFromOptions(fileset,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task',delegate:'GPU'},runningMode:'VIDEO',numPoses:2,minPoseDetectionConfidence:0.3,minPosePresenceConfidence:0.3,minTrackingConfidence:0.3});
 }
@@ -96,14 +113,20 @@ async function loadModels(){
 function loop(now){
   if(!running) return;
   if(video.readyState>=2){
-    resizeCanvas(); ctx.clearRect(0,0,canvas.width,canvas.height);
+    resizeCanvas();
+    ctx.clearRect(0,0,canvas.width,canvas.height);
     const hr=handLandmarker.detectForVideo(video,now);
     const pr=poseLandmarker.detectForVideo(video,now);
     const detectedHands=hr.landmarks||[];
     const handed=hr.handedness||[];
     let leftRaw=null,rightRaw=null;
-    detectedHands.forEach((lm,i)=>{ const side=handed[i]?.[0]?.categoryName; if(side==='Left') leftRaw=lm; if(side==='Right') rightRaw=lm; });
-    const left=handState(hands.left,leftRaw,now), right=handState(hands.right,rightRaw,now);
+    detectedHands.forEach((lm,i)=>{
+      const side=handed[i]?.[0]?.categoryName;
+      if(side==='Left') leftRaw=lm;
+      if(side==='Right') rightRaw=lm;
+    });
+    const left=handState(hands.left,leftRaw,now);
+    const right=handState(hands.right,rightRaw,now);
     if(leftRaw) hands.left.lostAt=now; else if(!hands.left.lostAt) hands.left.lostAt=now;
     if(rightRaw) hands.right.lostAt=now; else if(!hands.right.lostAt) hands.right.lostAt=now;
     const pose=pr.landmarks?.find(classifyHuman)||null;
@@ -111,24 +134,52 @@ function loop(now){
     setText('#rightState',rightRaw?'Detectada':right?'Predicha':'Perdida');
     setText('#poseState',pose?'Detectado':'—');
     setText('#humanState',pose?'Sí':'No');
-    if(drawPoseEl.checked && pose){ ctx.save(); ctx.lineWidth=3; ctx.strokeStyle='#ffffffaa'; drawConnections(normalizedPoints(pose),POSE_CONNECTIONS); ctx.restore(); }
-    ctx.save(); ctx.lineWidth=2; ctx.strokeStyle='#ffffffaa'; ctx.fillStyle='#fff'; if(left){drawConnections(left,HAND_CONNECTIONS); left.forEach(p=>drawPoint(p,2.4));drawSaber(left,'left');} if(right){drawConnections(right,HAND_CONNECTIONS); right.forEach(p=>drawPoint(p,2.4));drawSaber(right,'right');} ctx.restore();
+    if(drawPoseEl.checked && pose){
+      ctx.save();
+      ctx.lineWidth=3;
+      ctx.strokeStyle='#ffffffaa';
+      drawConnections(normalizedPoints(pose),POSE_CONNECTIONS);
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.lineWidth=2;
+    ctx.strokeStyle='#ffffffaa';
+    ctx.fillStyle='#fff';
+    if(left){drawConnections(left,HAND_CONNECTIONS); left.forEach(p=>drawPoint(p,2.4)); drawSaber(left,'left');}
+    if(right){drawConnections(right,HAND_CONNECTIONS); right.forEach(p=>drawPoint(p,2.4)); drawSaber(right,'right');}
+    ctx.restore();
   }
   frames++;
-  if(now-fpsTimer>=500){ fps=Math.round(frames*1000/(now-fpsTimer)); frames=0; fpsTimer=now; setText('#fps',String(fps)); }
-  lastFrame=now; requestAnimationFrame(loop);
+  if(now-fpsTimer>=500){
+    fps=Math.round(frames*1000/(now-fpsTimer));
+    frames=0;
+    fpsTimer=now;
+    setText('#fps',String(fps));
+  }
+  requestAnimationFrame(loop);
 }
 
 async function start(){
-  startBtn.disabled=true; statusEl.textContent='Cargando modelos…';
+  startBtn.disabled=true;
+  statusEl.textContent='Inicializando…';
   try{
     if(!handLandmarker || !poseLandmarker) await loadModels();
     const stream=await navigator.mediaDevices.getUserMedia({video:{width:{ideal:1280},height:{ideal:720},frameRate:{ideal:60,min:30}},audio:false});
-    video.srcObject=stream; await video.play(); resizeCanvas(); running=true; statusEl.textContent='Tracking activo'; setText('#phoneState','Listo para WebSocket'); requestAnimationFrame(loop); startBtn.textContent='Cámara activa';
-  }catch(e){ console.error(e); statusEl.textContent=`Error: ${e.message}`; startBtn.disabled=false; }
+    video.srcObject=stream;
+    await video.play();
+    resizeCanvas();
+    running=true;
+    statusEl.textContent='Tracking activo';
+    setText('#phoneState','Listo para WebSocket');
+    requestAnimationFrame(loop);
+    startBtn.textContent='Cámara activa';
+  }catch(e){
+    console.error(e);
+    statusEl.textContent=`Error: ${e.message}`;
+    startBtn.disabled=false;
+  }
 }
 
 predictionEl.addEventListener('input',()=>predictionValue.textContent=`${predictionEl.value} ms`);
 smoothingEl.addEventListener('input',()=>smoothingValue.textContent=smoothingEl.value);
-mirrorEl.addEventListener('change',resizeCanvas);
 startBtn.addEventListener('click',start);
