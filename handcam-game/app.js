@@ -38,10 +38,10 @@ class OneEuro {
     const dt = Math.max((time - this.t) / 1000, 1 / 240);
     const rawDx = (value - this.x) / dt;
     const aD = this.alpha(this.dCutoff, dt);
-    this.dx = this.dx + aD * (rawDx - this.dx);
+    this.dx += aD * (rawDx - this.dx);
     const cutoff = this.minCutoff + this.beta * Math.abs(this.dx);
     const a = this.alpha(cutoff, dt);
-    this.x = this.x + a * (value - this.x);
+    this.x += a * (value - this.x);
     this.t = time;
     return this.x;
   }
@@ -61,7 +61,6 @@ let poseLast = null;
 let running = false;
 let handLandmarker = null;
 let poseLandmarker = null;
-let frameCount = 0;
 let fpsFrames = 0;
 let fpsTimer = performance.now();
 let poseTick = 0;
@@ -127,7 +126,6 @@ function predictedPoints(hand, now) {
   const age = now - hand.lostAt;
   const maxAge = Number(predictionEl.value);
   if (age > maxAge) return null;
-
   const dt = age / 1000;
   const decay = Math.pow(Math.max(0, 1 - age / Math.max(maxAge, 1)), 1.35);
   return hand.last.map((p, i) => ({
@@ -204,8 +202,10 @@ function smoothPose(rawPose, now) {
 }
 
 async function loadModels() {
+  // Keep the WASM runtime on the exact same version as the installed JS package.
+  // Mixing 1.0.1 JS with the old 0.10.22 WASM can fail with an unhelpful "undefined" error.
   const fileset = await FilesetResolver.forVisionTasks(
-    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.22/wasm'
+    'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm'
   );
 
   handLandmarker = await HandLandmarker.createFromOptions(fileset, {
@@ -245,7 +245,6 @@ function processFrame(now) {
     return;
   }
   lastVideoTime = video.currentTime;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   let hr = { landmarks: [], handedness: [] };
@@ -259,7 +258,6 @@ function processFrame(now) {
   const handed = hr.handedness || [];
   let leftRaw = null;
   let rightRaw = null;
-
   detectedHands.forEach((lm, i) => {
     const side = handed[i]?.[0]?.categoryName;
     if (side === 'Left') leftRaw = lm;
@@ -281,11 +279,8 @@ function processFrame(now) {
     }
   }
 
-  const leftPredicted = !leftRaw && !!left;
-  const rightPredicted = !rightRaw && !!right;
-
-  setText('#leftState', leftRaw ? 'Detectada' : leftPredicted ? 'Predicha' : 'Perdida');
-  setText('#rightState', rightRaw ? 'Detectada' : rightPredicted ? 'Predicha' : 'Perdida');
+  setText('#leftState', leftRaw ? 'Detectada' : left ? 'Predicha' : 'Perdida');
+  setText('#rightState', rightRaw ? 'Detectada' : right ? 'Predicha' : 'Perdida');
   setText('#poseState', pose ? 'Detectado' : '—');
   setText('#humanState', pose ? 'Sí' : 'No');
 
@@ -313,7 +308,6 @@ function processFrame(now) {
   }
   ctx.restore();
 
-  frameCount++;
   fpsFrames++;
   if (now - fpsTimer >= 500) {
     setText('#fps', String(Math.round(fpsFrames * 1000 / (now - fpsTimer))));
@@ -322,6 +316,11 @@ function processFrame(now) {
   }
 
   requestAnimationFrame(processFrame);
+}
+
+function readableError(e) {
+  if (!e) return 'Error desconocido';
+  return e.message || e.name || String(e);
 }
 
 async function start() {
@@ -349,8 +348,8 @@ async function start() {
     requestAnimationFrame(processFrame);
     startBtn.textContent = 'Cámara activa';
   } catch (e) {
-    console.error(e);
-    statusEl.textContent = `Error: ${e.message}`;
+    console.error('HandCam startup error:', e);
+    statusEl.textContent = `Error: ${readableError(e)}`;
     startBtn.disabled = false;
   }
 }
