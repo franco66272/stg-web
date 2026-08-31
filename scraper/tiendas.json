@@ -1,10 +1,10 @@
 [
-  {"key":"fenixcell_com_ar","nombre":"Fenix Cell","url":"https://www.fenixcell.com.ar/","extractor":"extractores.woocommerce:extraer_catalogo"},
-  {"key":"uniontools_com_ar","nombre":"Uniontools","url":"https://uniontools.com.ar/","extractor":"extractores.woocommerce:extraer_catalogo"},
-  {"key":"evophone_com_ar","nombre":"Evophone","url":"https://www.evophone.com.ar/tienda/","extractor":"extractores.woocommerce:extraer_catalogo"},
-  {"key":"i2cmayorista_com_ar","nombre":"I2C Mayorista","url":"https://i2cmayorista.com.ar/","extractor":"extractores.woocommerce:extraer_catalogo"},
-  {"key":"tsshop_com_ar","nombre":"TS-Shop","url":"https://ts-shop.com.ar/","extractor":"extractores.woocommerce:extraer_catalogo"},
-  {"key":"patagoniacell_com_ar","nombre":"Patagonia Cell","url":"https://www.barilochepatagoniacell.com.ar/insumos/","extractor":"extractores.woocommerce:extraer_catalogo"},
-  {"key":"propartscelulares_com_ar","nombre":"ProParts Celulares","url":"https://propartscelulares.com.ar/","extractor":"extractores.woocommerce:extraer_catalogo"},
-  {"key":"mayoristaelectronica_com_ar","nombre":"Mayorista Electrónica","url":"https://mayoristaelectronica.com.ar/","extractor":"extractores.woocommerce:extraer_catalogo"}
+  {"key":"fenixcell_com_ar","nombre":"Fenix Cell","url":"https://www.fenixcell.com.ar/","extractor":"extractores.auto:extraer_catalogo"},
+  {"key":"uniontools_com_ar","nombre":"Uniontools","url":"https://uniontools.com.ar/","extractor":"extractores.auto:extraer_catalogo"},
+  {"key":"evophone_com_ar","nombre":"Evophone","url":"https://www.evophone.com.ar/tienda/","extractor":"extractores.auto:extraer_catalogo"},
+  {"key":"i2cmayorista_com_ar","nombre":"I2C Mayorista","url":"https://i2cmayorista.com.ar/","extractor":"extractores.auto:extraer_catalogo"},
+  {"key":"tsshop_com_ar","nombre":"TS-Shop","url":"https://ts-shop.com.ar/","extractor":"extractores.auto:extraer_catalogo"},
+  {"key":"patagoniacell_com_ar","nombre":"Patagonia Cell","url":"https://www.barilochepatagoniacell.com.ar/insumos/","extractor":"extractores.auto:extraer_catalogo"},
+  {"key":"propartscelulares_com_ar","nombre":"ProParts Celulares","url":"https://propartscelulares.com.ar/","extractor":"extractores.auto:extraer_catalogo"},
+  {"key":"mayoristaelectronica_com_ar","nombre":"Mayorista Electrónica","url":"https://mayoristaelectronica.com.ar/","extractor":"extractores.auto:extraer_catalogo"}
 ]
